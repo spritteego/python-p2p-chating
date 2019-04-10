@@ -48,7 +48,7 @@ class MyServer(socketserver.BaseRequestHandler):
                 account = dataobj[0]
                 password = dataobj[1]
                 optype = dataobj[2]
-                existuser = False
+                existuser = False   
                 if len(connLst) > 0:
                     for obj in connLst:
                         if obj.account == account:
@@ -85,6 +85,8 @@ class MyServer(socketserver.BaseRequestHandler):
             print(data)
             dataobj = data.decode('utf-8')
             dataobj = json.loads(dataobj)
+            # if type(dataobj)==list:
+            #     continue
             if dataobj['type'] == 'ag' and userIn:
                 groupName = dataobj['groupName']
                 groupObj = Group(groupName,self.request)
@@ -129,6 +131,6 @@ class MyServer(socketserver.BaseRequestHandler):
                 continue
 
 if __name__ == '__main__':
-    server = socketserver.ThreadingTCPServer(('192.168.1.7',8022),MyServer)
+    server = socketserver.ThreadingTCPServer(('0.0.0.0',8022),MyServer)
     print('waiting for connection...')
     server.serve_forever()

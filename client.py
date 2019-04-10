@@ -10,7 +10,7 @@ desc:p2p communication clientside
 from socket import *
 import threading,sys,json,re
 
-HOST = '192.168.1.7'  ##
+HOST = '127.0.0.1'  ##
 PORT=8022
 BUFSIZE = 1024  ##缓冲区大小  1K
 ADDR = (HOST,PORT)
@@ -19,16 +19,16 @@ tcpCliSock = socket(AF_INET,SOCK_STREAM)
 userAccount = None
 def register():
     print("""
-    Glad to have you a member of us!
+    很高兴您将成为校园区块链网络的一员！
     """)
-    accout = input('Please input your account: ')
+    accout = input('请输入您的账户: ')
     if not re.findall(myre, accout):
-        print('Account illegal!')
+        print('账户名非法，请输入合法的字符（[a-z]+[0-9]）!')
         return None
-    password1  = input('Please input your password: ')
-    password2 = input('Please confirm your password: ')
+    password1  = input('请输入您的密码: ')
+    password2 = input('请再次输入您的密码: ')
     if not (password1 and password1 == password2):
-        print('Password not illegal!')
+        print('二次输入密码不一致，请重新输入!')
         return None
     global userAccount
     userAccount = accout
@@ -38,26 +38,26 @@ def register():
     data = tcpCliSock.recv(BUFSIZE)
     data = data.decode('utf-8')
     if data == '0':
-        print('Success to register!')
+        print('注册成功!')
         return True
     elif data == '1':
-        print('Failed to register, account existed!')
+        print('账户名已存在!')
         return False
     else:
-        print('Failed for exceptions!')
+        print('注册异常！')
         return False
 
 def login():
     print("""
-    Welcome to login in!
+    欢迎登录校园区块链通讯系统
     """)
-    accout = input('Account: ')
+    accout = input('账户: ')
     if not re.findall(myre, accout):
-        print('Account illegal!')
+        print('账户名错误!')
         return None
-    password = input('Password: ')
+    password = input('密码: ')
     if not password:
-        print('Password illegal!')
+        print('密码错误')
         return None
     global userAccount
     userAccount = accout
@@ -66,13 +66,13 @@ def login():
     tcpCliSock.send(datastr.encode('utf-8'))
     data = tcpCliSock.recv(BUFSIZE)
     if data == '0':
-        print('Success to login!')
+        print('登录成功!')
         return True
     else:
-        print('Failed to login in(user not exist or username not match the password)!')
+        print('登录失败，请重新检查！')
         return False
 def addGroup():
-    groupname = input('Please input group name: ')
+    groupname = input('请输入要创建的群组名: ')
     if not re.findall(myre, groupname):
         print('group name illegal!')
         return None
@@ -80,7 +80,7 @@ def addGroup():
 
 def chat(target):
     while True:
-        print('{} -> {}: '.format(userAccount,target))
+        print('{} 发送至 {}: '.format(userAccount,target))
         msg = input()
         if len(msg) > 0 and not msg in 'qQ':
             if 'group' in target:
@@ -95,30 +95,30 @@ def chat(target):
         elif msg in 'qQ':
             break
         else:
-            print('Send data illegal!')
+            print('发送数据失败!')
 class inputdata(threading.Thread):
     def run(self):
         menu = """
-                        (CP): Chat with individual
-                        (CG): Chat with group member
-                        (AG): Add a group
-                        (EG): Enter a group
-                        (H):  For help menu
-                        (Q):  Quit the system
+                        (1): 点对点聊天
+                        (2): 群组聊天
+                        (3): 创建群组
+                        (4): 进入群组
+                        (5): 帮助 
+                        (6): 退出系统
                         """
         print(menu)
         while True:
-            operation = input('Please input your operation("h" for help): ')
-            if operation in 'cPCPCpcp':
-                target = input('Who would you like to chat with: ')
+            operation = input('请输入数字[1-6]: ')
+            if operation in '1':
+                target = input('请输入你要聊天的对象: ')
                 chat(target)
                 continue
 
-            if  operation in 'cgCGCgcG':
-                target = input('Which group would you like to chat with: ')
+            if  operation in '2':
+                target = input('请输入你要聊天的群组: ')
                 chat('group'+target)
                 continue
-            if operation in 'agAGAgaG':
+            if operation in '3':
                 groupName = addGroup()
                 if groupName:
                     dataObj = {'type': 'ag', 'groupName': groupName}
@@ -126,41 +126,42 @@ class inputdata(threading.Thread):
                     tcpCliSock.send(dataObj.encode('utf-8'))
                 continue
 
-            if operation in 'egEGEgeG':
+            if operation in '4':
                 groupname = input('Please input group name fro entering: ')
                 if not re.findall(myre, groupname):
-                    print('group name illegal!')
+                    print('组名不正确!')
                     return None
                 dataObj = {'type': 'eg', 'groupName': 'group'+groupname}
                 dataObj = json.dumps(dataObj)
                 tcpCliSock.send(dataObj.encode('utf-8'))
                 continue
-            if operation in 'hH':
+            if operation in '5':
                 print(menu)
                 continue
 
-            if operation in 'qQ':
+            if operation in '6':
+                tcpCliSock.close()
                 sys.exit(1)
             else:
-                print('No such operation!')
+                print('没有该选项，请重新输入!')
 
 class getdata(threading.Thread):
     def run(self):
         while True:
             data = tcpCliSock.recv(BUFSIZE).decode('utf-8')
             if data == '-1':
-                print('can not connect to target!')
+                print('网络无法连接...')
                 continue
             if data == 'ag0':
-                print('Group added!')
+                print('已创建群组!')
                 continue
 
             if data == 'eg0':
-                print('Entered group!')
+                print('已加入群组!')
                 continue
 
             if data == 'eg1':
-                print('Failed to enter group!')
+                print('加入群组失败!')
                 continue
 
             dataObj = json.loads(data)
@@ -174,14 +175,14 @@ def main():
 
         try:
             tcpCliSock.connect(ADDR)
-            print('Connected with server')
+            print('连接区块链转发服务器成功...')
             while True:
-                loginorReg = input('(l)ogin or (r)egister a new account: ')
-                if loginorReg in 'lL':
+                loginorReg = input('（1）：登录账户\n（2）：注册账户\n请输入：')
+                if loginorReg in '1':
                     log = login()
                     if log:
                         break
-                if loginorReg in 'rR':
+                if loginorReg in '2':
                     reg = register()
                     if reg:
                         break
@@ -194,7 +195,7 @@ def main():
             mygetdata.join()
 
         except Exception:
-            print('error')
+            print('无法连接至转发服，正在退出...')
             tcpCliSock.close()
             sys.exit()
 
